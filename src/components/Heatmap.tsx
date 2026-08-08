@@ -77,7 +77,7 @@ export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: 
         content: contentEntries.filter((c) => c.date === selectedDay),
         dtm: dtmLogs.filter((d) => formatDate(new Date(d.sent_at)) === selectedDay),
       }
-    : null;
+    : { associations: [], content: [], dtm: [] };
 
   return (
     <div>
