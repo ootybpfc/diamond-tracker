@@ -37,10 +37,19 @@ export function DailyCheckin() {
   useEffect(() => {
     const templateItems = checklistTemplate?.items || [];
     const savedItems = todayAccountability?.items || [];
+
+    const savedByLabel = new Map(savedItems.map((item) => [item.label, item]));
     const merged: ChecklistItem[] = templateItems.map((label) => {
-      const saved = savedItems.find((s) => s.label === label);
+      const saved = savedByLabel.get(label);
       return { label, checked: saved?.checked ?? false };
     });
+
+    for (const saved of savedItems) {
+      if (!templateItems.includes(saved.label)) {
+        merged.push(saved);
+      }
+    }
+
     setChecklist(merged);
   }, [checklistTemplate, todayAccountability]);
 
