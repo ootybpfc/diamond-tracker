@@ -24,11 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     supabase.auth.getSession().then(({ data }) => {
+      console.log('Auth getSession result', data.session);
       setSession(data.session);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log('Auth state changed', event, newSession);
       setSession(newSession);
     });
 
@@ -37,13 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: 'Supabase not configured' };
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    console.log('signInWithPassword result', data, error);
+    if (data.session) {
+      setSession(data.session);
+    }
     return { error: error?.message ?? null };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: 'Supabase not configured' };
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (data.session) {
+      setSession(data.session);
+    }
     return { error: error?.message ?? null };
   }, []);
 
