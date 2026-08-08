@@ -1,11 +1,12 @@
-import { Association, ContentEntry, DtmLog, AccountabilityDay } from '../types/database';
-import { lastNDays, formatDate, formatMonth } from '../lib/utils';
+import { Association, ContentEntry, DtmLog, AccountabilityDay, ChecklistTemplate } from '../types/database';
+import { lastNDays, formatDate, formatMonth, today, currentMonth } from '../lib/utils';
 
 interface BarChartProps {
   associations: Association[];
   contentEntries: ContentEntry[];
   dtmLogs: DtmLog[];
   accountabilityDays: AccountabilityDay[];
+  checklistTemplate: ChecklistTemplate | null;
   period?: 'week' | 'month';
 }
 
@@ -64,9 +65,21 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
           ? dateStr.startsWith(periodKey)
           : dateStr === periodKey;
       }).length,
-      accountability: accountabilityDays.filter((a) => {
-        return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
-      }).reduce((sum, a) => sum + a.items.filter((item) => item.checked).length, 0),
+      accountability: (() => {
+        const matches = accountabilityDays.filter((a) => {
+          return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
+        });
+        const savedCount = matches.reduce((sum, a) => sum + a.items.length, 0);
+        if (savedCount > 0) return savedCount;
+
+        if (period === 'week' && periodKey === today() && checklistTemplate?.items.length) {
+          return checklistTemplate.items.length;
+        }
+        if (period === 'month' && periodKey === currentMonth() && checklistTemplate?.items.length) {
+          return checklistTemplate.items.length;
+        }
+        return 0;
+      })(),
     };
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return { periodKey, counts, total };

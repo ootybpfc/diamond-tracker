@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { lastNDays, formatDate, startOfWeek, currentMonth } from '../lib/utils';
 
 export function Dashboard() {
-  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, loading } = useData();
+  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, checklistTemplate, loading } = useData();
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   const stats = useMemo(() => {
@@ -122,6 +122,7 @@ export function Dashboard() {
           contentEntries={contentEntries}
           dtmLogs={dtmLogs}
           accountabilityDays={accountabilityDays}
+          checklistTemplate={checklistTemplate}
           period={viewMode}
         />
       </Card>
