@@ -1,10 +1,12 @@
-import { Association, ContentEntry, DtmLog } from '../types/database';
-import { lastNDays, formatDate } from '../lib/utils';
+import { Association, ContentEntry, DtmLog, AccountabilityDay } from '../types/database';
+import { lastNDays, formatDate, formatMonth } from '../lib/utils';
 
 interface BarChartProps {
   associations: Association[];
   contentEntries: ContentEntry[];
   dtmLogs: DtmLog[];
+  accountabilityDays: AccountabilityDay[];
+  period?: 'week' | 'month';
 }
 
 const CATEGORIES = [
@@ -12,21 +14,62 @@ const CATEGORIES = [
   { key: 'reading', label: 'Read', color: 'bg-sage' },
   { key: 'podcast', label: 'Pod', color: 'bg-clay' },
   { key: 'dtm', label: 'DTM', color: 'bg-accent/60' },
+  { key: 'accountability', label: 'Tasks', color: 'bg-sage/80' },
 ] as const;
 
-export function BarChart({ associations, contentEntries, dtmLogs }: BarChartProps) {
-  const days = lastNDays(7);
+export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, period = 'week' }: BarChartProps) {
+  const recentMonthKeys = (() => {
+    const months = new Set<string>();
 
-  const dayData = days.map((date) => {
-    const dateStr = formatDate(date);
+    associations.forEach((a) => months.add(formatMonth(new Date(a.date))));
+    contentEntries.forEach((c) => months.add(formatMonth(new Date(c.date))));
+    dtmLogs.forEach((d) => months.add(formatMonth(new Date(d.sent_at))));
+    accountabilityDays.forEach((a) => months.add(formatMonth(new Date(a.date))));
+
+    if (months.size === 0) {
+      const now = new Date();
+      for (let i = 3; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.add(formatMonth(monthDate));
+      }
+    }
+
+    return [...months].sort().slice(-4);
+  })();
+
+  const periods = period === 'month'
+    ? recentMonthKeys
+    : lastNDays(7).map((d) => formatDate(d));
+
+  const dayData = periods.map((periodKey) => {
     const counts = {
-      association: associations.filter((a) => a.date === dateStr).length,
-      reading: contentEntries.filter((c) => c.date === dateStr && c.type === 'reading').length,
-      podcast: contentEntries.filter((c) => c.date === dateStr && c.type === 'podcast').length,
-      dtm: dtmLogs.filter((d) => formatDate(new Date(d.sent_at)) === dateStr).length,
+      association: associations.filter((a) => {
+        return period === 'month'
+          ? a.date.startsWith(periodKey)
+          : a.date === periodKey;
+      }).length,
+      reading: contentEntries.filter((c) => {
+        return period === 'month'
+          ? c.date.startsWith(periodKey) && c.type === 'reading'
+          : c.date === periodKey && c.type === 'reading';
+      }).length,
+      podcast: contentEntries.filter((c) => {
+        return period === 'month'
+          ? c.date.startsWith(periodKey) && c.type === 'podcast'
+          : c.date === periodKey && c.type === 'podcast';
+      }).length,
+      dtm: dtmLogs.filter((d) => {
+        const dateStr = formatDate(new Date(d.sent_at));
+        return period === 'month'
+          ? dateStr.startsWith(periodKey)
+          : dateStr === periodKey;
+      }).length,
+      accountability: accountabilityDays.filter((a) => {
+        return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
+      }).reduce((sum, a) => sum + a.items.filter((item) => item.checked).length, 0),
     };
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
-    return { date, dateStr, counts, total };
+    return { periodKey, counts, total };
   });
 
   const maxTotal = Math.max(...dayData.map((d) => d.total), 1);
@@ -35,10 +78,10 @@ export function BarChart({ associations, contentEntries, dtmLogs }: BarChartProp
   return (
     <div>
       <div className="flex items-end justify-between gap-2 h-32 mb-2">
-        {dayData.map(({ date, dateStr, counts, total }) => {
+        {dayData.map(({ periodKey, counts, total }) => {
           const heightPercent = (total / maxTotal) * 100;
           return (
-            <div key={dateStr} className="flex-1 flex flex-col items-center gap-1">
+            <div key={periodKey} className="flex-1 flex flex-col items-center gap-1">
               <div className="w-full flex-1 flex flex-col-reverse gap-0.5 min-h-0">
                 {total > 0 && (
                   <div
@@ -60,7 +103,7 @@ export function BarChart({ associations, contentEntries, dtmLogs }: BarChartProp
                 )}
               </div>
               <span className="text-[10px] font-mono text-muted">
-                {dayLabels[date.getDay()].slice(0, 1)}
+                {period === 'month' ? periodKey.slice(5) : periodKey.slice(8)}
               </span>
             </div>
           );

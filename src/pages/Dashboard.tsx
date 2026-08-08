@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Users, UserPlus, MessageSquare, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
 import { useData } from '../hooks/useData';
 import { Card, SectionHeader } from '../components/ui/Card';
@@ -9,7 +9,8 @@ import { Badge } from '../components/ui/Badge';
 import { lastNDays, formatDate, startOfWeek, currentMonth } from '../lib/utils';
 
 export function Dashboard() {
-  const { associations, contentEntries, people, dtmLogs, dittoLogs, loading } = useData();
+  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, loading } = useData();
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   const stats = useMemo(() => {
     const weekStart = startOfWeek(new Date());
@@ -96,10 +97,33 @@ export function Dashboard() {
         <Heatmap associations={associations} contentEntries={contentEntries} dtmLogs={dtmLogs} people={people} />
       </Card>
 
-      {/* Weekly activity chart */}
       <Card>
-        <SectionHeader title="7-Day Activity Mix" />
-        <BarChart associations={associations} contentEntries={contentEntries} dtmLogs={dtmLogs} />
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <SectionHeader title="Activity Mix" />
+          <div className="flex rounded-pill border border-border overflow-hidden text-[11px]">
+            <button
+              type="button"
+              onClick={() => setViewMode('week')}
+              className={`px-3 py-2 transition ${viewMode === 'week' ? 'bg-accent text-bg' : 'bg-surface-2 text-muted'}`}
+            >
+              Weekly
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('month')}
+              className={`px-3 py-2 transition ${viewMode === 'month' ? 'bg-accent text-bg' : 'bg-surface-2 text-muted'}`}
+            >
+              Monthly
+            </button>
+          </div>
+        </div>
+        <BarChart
+          associations={associations}
+          contentEntries={contentEntries}
+          dtmLogs={dtmLogs}
+          accountabilityDays={accountabilityDays}
+          period={viewMode}
+        />
       </Card>
 
       {/* Ditto note */}
