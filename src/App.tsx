@@ -4,6 +4,7 @@ import { DataProvider } from './hooks/useData';
 import { ToastProvider } from './components/ui/Toast';
 import { BottomNav, TopNav } from './components/Navigation';
 import { AuthScreen } from './pages/AuthScreen';
+import { NewPasswordScreen } from './pages/NewPasswordScreen';
 import { SetupScreen } from './pages/SetupScreen';
 import { Dashboard } from './pages/Dashboard';
 import { DailyCheckin } from './pages/DailyCheckin';
@@ -15,7 +16,7 @@ import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react';
 
 function AppContent() {
-  const { session, loading } = useAuth();
+  const { session, loading, recoveryMode } = useAuth();
 
   if (loading) {
     return (
@@ -27,6 +28,10 @@ function AppContent() {
 
   if (!session) {
     return <AuthScreen />;
+  }
+
+  if (recoveryMode) {
+    return <NewPasswordScreen />;
   }
 
   return (
