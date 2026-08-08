@@ -1,4 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { DataProvider } from './hooks/useData';
 import { ToastProvider } from './components/ui/Toast';
@@ -65,6 +66,7 @@ export default function App() {
     return (
       <ToastProvider>
         <SetupScreen />
+        <Analytics />
       </ToastProvider>
     );
   }
@@ -75,6 +77,7 @@ export default function App() {
         <ToastProvider>
           <OfflineIndicator />
           <AppContent />
+          <Analytics />
         </ToastProvider>
       </AuthProvider>
     </HashRouter>
