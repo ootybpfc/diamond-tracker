@@ -9,7 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { lastNDays, formatDate, startOfWeek, currentMonth } from '../lib/utils';
 
 export function Dashboard() {
-  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, checklistTemplate, loading } = useData();
+  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, loading } = useData();
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   const stats = useMemo(() => {
@@ -81,7 +81,7 @@ export function Dashboard() {
         <StatCard label="This Week" value={stats.activitiesThisWeek} icon={<TrendingUp size={12} />} />
         <StatCard label="Streak" value={`${stats.streak}d`} icon={<TrendingUp size={12} />} accent="sage" />
         <StatCard label="Customers" value={stats.customerCount} icon={<Users size={12} />} accent="sage" />
-        <StatCard label="Prospects" value={stats.prospectCount} icon={<UserPlus size={12} />} accent="clay" />
+        <StatCard label="Candidates" value={stats.prospectCount} icon={<UserPlus size={12} />} accent="clay" />
         <StatCard label="DTM This Week" value={stats.dtmThisWeek} icon={<MessageSquare size={12} />} />
         <StatCard
           label="Ditto Status"
@@ -122,7 +122,6 @@ export function Dashboard() {
           contentEntries={contentEntries}
           dtmLogs={dtmLogs}
           accountabilityDays={accountabilityDays}
-          checklistTemplate={checklistTemplate}
           period={viewMode}
         />
       </Card>

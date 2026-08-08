@@ -1,12 +1,11 @@
-import { Association, ContentEntry, DtmLog, AccountabilityDay, ChecklistTemplate } from '../types/database';
-import { lastNDays, formatDate, formatMonth, today, currentMonth } from '../lib/utils';
+import { Association, ContentEntry, DtmLog, AccountabilityDay } from '../types/database';
+import { lastNDays, formatDate, formatMonth } from '../lib/utils';
 
 interface BarChartProps {
   associations: Association[];
   contentEntries: ContentEntry[];
   dtmLogs: DtmLog[];
   accountabilityDays: AccountabilityDay[];
-  checklistTemplate: ChecklistTemplate | null;
   period?: 'week' | 'month';
 }
 
@@ -15,7 +14,7 @@ const CATEGORIES = [
   { key: 'reading', label: 'Read', color: 'bg-sage' },
   { key: 'podcast', label: 'Pod', color: 'bg-clay' },
   { key: 'dtm', label: 'DTM', color: 'bg-accent/60' },
-  { key: 'accountability', label: 'Tasks', color: 'bg-sage/80' },
+  { key: 'accountability', label: 'Tasks added', color: 'bg-sage/80' },
 ] as const;
 
 export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, period = 'week' }: BarChartProps) {
@@ -65,27 +64,16 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
           ? dateStr.startsWith(periodKey)
           : dateStr === periodKey;
       }).length,
-      accountability: (() => {
-        const matches = accountabilityDays.filter((a) => {
-          return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
-        });
-        const savedCount = matches.reduce((sum, a) => sum + a.items.length, 0);
-        if (savedCount > 0) return savedCount;
-
-        if (period === 'week' && periodKey === today() && checklistTemplate?.items.length) {
-          return checklistTemplate.items.length;
-        }
-        if (period === 'month' && periodKey === currentMonth() && checklistTemplate?.items.length) {
-          return checklistTemplate.items.length;
-        }
-        return 0;
-      })(),
+      accountability: accountabilityDays.filter((a) => {
+        return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
+      }).reduce((sum, a) => sum + a.items.length, 0),
     };
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return { periodKey, counts, total };
   });
 
   const maxTotal = Math.max(...dayData.map((d) => d.total), 1);
+  const hasAccountabilityData = dayData.some(({ counts }) => counts.accountability > 0);
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -123,7 +111,7 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
         })}
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-        {CATEGORIES.map(({ key, label, color }) => (
+        {CATEGORIES.filter(({ key }) => key !== 'accountability' || hasAccountabilityData).map(({ key, label, color }) => (
           <div key={key} className="flex items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-sm ${color}`} />
             <span className="text-[10px] font-mono text-muted">{label}</span>
