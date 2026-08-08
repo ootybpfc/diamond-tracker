@@ -305,6 +305,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 export function useData() {
   const ctx = useContext(DataContext);
-  if (ctx === undefined) throw new Error('useData must be used within DataProvider');
+  if (ctx === undefined) {
+    return {
+      associations: [],
+      dittoLogs: [],
+      contentEntries: [],
+      people: [],
+      dtmLogs: [],
+      inventory: [],
+      accountabilityDays: [],
+      checklistTemplate: null,
+      coachSessions: [],
+      loading: true,
+      addAssociation: async () => {},
+      deleteAssociation: async () => {},
+      saveDitto: async () => {},
+      addContent: async () => null,
+      updateContentPolished: async () => {},
+      deleteContent: async () => {},
+      addPerson: async () => {},
+      updatePerson: async () => {},
+      deletePerson: async () => {},
+      markDtmSent: async () => {},
+      addInventory: async () => {},
+      deleteInventory: async () => {},
+      saveAccountability: async () => {},
+      updateChecklistTemplate: async () => {},
+      addCoachSession: async () => null,
+      updateCoachSession: async () => {},
+      deleteCoachSession: async () => {},
+    };
+  }
   return ctx;
 }

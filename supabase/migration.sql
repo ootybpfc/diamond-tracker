@@ -86,6 +86,7 @@ create table public.accountability_days (
   user_id uuid references auth.users(id) on delete cascade not null,
   date date not null,
   items jsonb not null default '[]'::jsonb,
+  dtm_count integer not null default 0,
   unique (user_id, date)
 );
 
