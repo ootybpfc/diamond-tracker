@@ -1,4 +1,4 @@
-import { Association, ContentEntry, DtmLog, AccountabilityDay } from '../types/database';
+import { Association, ContentEntry, DtmLog, AccountabilityDay, ChecklistTemplate } from '../types/database';
 import { lastNDays, formatDate, formatMonth } from '../lib/utils';
 
 interface BarChartProps {
@@ -6,6 +6,7 @@ interface BarChartProps {
   contentEntries: ContentEntry[];
   dtmLogs: DtmLog[];
   accountabilityDays: AccountabilityDay[];
+  checklistTemplate: ChecklistTemplate | null;
   period?: 'week' | 'month';
 }
 
@@ -16,7 +17,7 @@ const BASE_CATEGORIES = [
   { key: 'dtm', label: 'DTM', color: 'bg-accent/60' },
 ] as const;
 
-export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, period = 'week' }: BarChartProps) {
+export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, checklistTemplate, period = 'week' }: BarChartProps) {
   const recentMonthKeys = (() => {
     const months = new Set<string>();
 
@@ -40,8 +41,20 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
     ? recentMonthKeys
     : lastNDays(7).map((d) => formatDate(d));
 
+  const accountabilityLabels = checklistTemplate?.items?.length
+    ? checklistTemplate.items
+    : Array.from(new Set(accountabilityDays.flatMap((day) => day.items.map((item) => item.label))));
+
+  const colorPalette = ['bg-sage/80', 'bg-sage/60', 'bg-accent/30', 'bg-clay/60', 'bg-surface-3', 'bg-accent/40'];
+
+  const accountabilityCategories = accountabilityLabels.map((label, index) => ({
+    key: `accountability-${label}`,
+    label,
+    color: colorPalette[index % colorPalette.length],
+  }));
+
   const dayData = periods.map((periodKey) => {
-    const counts = {
+    const counts: Record<string, number> = {
       association: associations.filter((a) => {
         return period === 'month'
           ? a.date.startsWith(periodKey)
@@ -63,20 +76,25 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
           ? dateStr.startsWith(periodKey)
           : dateStr === periodKey;
       }).length,
-      accountability: accountabilityDays.filter((a) => {
-        return period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
-      }).reduce((sum, a) => sum + a.items.length, 0),
     };
+
+    accountabilityCategories.forEach(({ key, label }) => {
+      counts[key] = accountabilityDays.reduce((sum, a) => {
+        const matchesPeriod = period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
+        if (!matchesPeriod) return sum;
+        return sum + a.items.filter((item) => item.label === label).length;
+      }, 0);
+    });
+
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     return { periodKey, counts, total };
   });
 
   const maxTotal = Math.max(...dayData.map((d) => d.total), 1);
-  const hasAccountabilityData = dayData.some(({ counts }) => counts.accountability > 0);
-  const categories = [
-    ...BASE_CATEGORIES,
-    ...(hasAccountabilityData ? [{ key: 'accountability', label: 'Tasks added', color: 'bg-sage/80' }] : []),
-  ];
+  const hasAccountabilityData = accountabilityCategories.length > 0 && dayData.some(({ counts }) =>
+    accountabilityCategories.some(({ key }) => counts[key] > 0)
+  );
+  const categories = [...BASE_CATEGORIES, ...(hasAccountabilityData ? accountabilityCategories : [])];
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
@@ -93,12 +111,12 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
                     style={{ height: `${Math.max(heightPercent, 6)}%` }}
                   >
                     {categories.map(({ key, color }) =>
-                      counts[key as keyof typeof counts] > 0 ? (
+                      counts[key] > 0 ? (
                         <div
                           key={key}
                           className={color}
                           style={{
-                            flexGrow: counts[key as keyof typeof counts],
+                            flexGrow: counts[key],
                           }}
                         />
                       ) : null
