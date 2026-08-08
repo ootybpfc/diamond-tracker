@@ -63,8 +63,12 @@ export function DailyCheckin() {
   };
 
   const handleSaveDtmCount = async () => {
-    await saveAccountability(todayStr, checklist, dtmCount);
-    toast('DTM count saved', 'success');
+    try {
+      await saveAccountability(todayStr, checklist, dtmCount);
+      toast('DTM count saved', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? `Could not save: ${err.message}` : 'Could not save DTM count', 'error');
+    }
   };
 
   const handleSaveDitto = async () => {
@@ -76,9 +80,17 @@ export function DailyCheckin() {
   };
 
   const toggleChecklistItem = async (index: number) => {
+    const previous = checklist;
     const updated = checklist.map((item, i) => (i === index ? { ...item, checked: !item.checked } : item));
     setChecklist(updated);
-    await saveAccountability(todayStr, updated, dtmCount);
+    try {
+      await saveAccountability(todayStr, updated, dtmCount);
+    } catch (err) {
+      // Roll the optimistic tick back so the UI never claims progress the
+      // database rejected.
+      setChecklist(previous);
+      toast(err instanceof Error ? `Could not save: ${err.message}` : 'Could not save checklist', 'error');
+    }
   };
 
   const completedCount = checklist.filter((c) => c.checked).length;

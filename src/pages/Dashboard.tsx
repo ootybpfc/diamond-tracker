@@ -1,27 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Users, UserPlus, MessageSquare, TrendingUp, CheckCircle2, Clock } from 'lucide-react';
 import { useData } from '../hooks/useData';
 import { Card, SectionHeader } from '../components/ui/Card';
 import { StatCard } from '../components/StatCard';
 import { Heatmap } from '../components/Heatmap';
-import { BarChart } from '../components/BarChart';
+import { AccountabilityChart } from '../components/AccountabilityChart';
+import { DtmMomentum } from '../components/DtmMomentum';
 import { Badge } from '../components/ui/Badge';
 import { formatDate, startOfWeek, currentMonth } from '../lib/utils';
 
 export function Dashboard() {
-  const { associations, contentEntries, people, dittoLogs, accountabilityDays, checklistTemplate, loading } = useData();
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const { associations, contentEntries, people, dittoLogs, dtmLogs, accountabilityDays, checklistTemplate, loading } = useData();
 
   const stats = useMemo(() => {
     const weekStart = startOfWeek(new Date());
     const weekStartStr = formatDate(weekStart);
+    const todayStr = formatDate(new Date());
+    // Bound both ends: a future-dated row would otherwise inflate "this week".
+    const inThisWeek = (date: string) => date >= weekStartStr && date <= todayStr;
+
     const dtmThisWeek = accountabilityDays
-      .filter((a) => a.date >= weekStartStr)
+      .filter((a) => inThisWeek(a.date))
       .reduce((sum, a) => sum + (a.dtm_count ?? 0), 0);
 
     const activitiesThisWeek =
-      associations.filter((a) => a.date >= weekStartStr).length +
-      contentEntries.filter((c) => c.date >= weekStartStr).length +
+      associations.filter((a) => inThisWeek(a.date)).length +
+      contentEntries.filter((c) => inThisWeek(c.date)).length +
       dtmThisWeek;
 
     const customerCount = people.filter((p) => p.category === 'customer' || p.category === 'both').length;
@@ -94,33 +98,19 @@ export function Dashboard() {
         <Heatmap associations={associations} contentEntries={contentEntries} accountabilityDays={accountabilityDays} />
       </Card>
 
+      {/* Per-task consistency for the user's own Accountability list */}
       <Card>
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <SectionHeader title="Activity Mix" />
-          <div className="flex rounded-pill border border-border overflow-hidden text-[11px]">
-            <button
-              type="button"
-              onClick={() => setViewMode('week')}
-              className={`px-3 py-2 transition ${viewMode === 'week' ? 'bg-accent text-bg' : 'bg-surface-2 text-muted'}`}
-            >
-              Weekly
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('month')}
-              className={`px-3 py-2 transition ${viewMode === 'month' ? 'bg-accent text-bg' : 'bg-surface-2 text-muted'}`}
-            >
-              Monthly
-            </button>
-          </div>
-        </div>
-        <BarChart
-          associations={associations}
-          contentEntries={contentEntries}
+        <SectionHeader title="Accountability" />
+        <AccountabilityChart
           accountabilityDays={accountabilityDays}
           checklistTemplate={checklistTemplate}
-          period={viewMode}
         />
+      </Card>
+
+      {/* DTM is a count, so it gets its own scale rather than being stacked */}
+      <Card>
+        <SectionHeader title="DTM Momentum" />
+        <DtmMomentum accountabilityDays={accountabilityDays} networkDtmCount={dtmLogs.length} />
       </Card>
 
       {/* Ditto note */}

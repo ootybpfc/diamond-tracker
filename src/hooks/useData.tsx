@@ -55,6 +55,7 @@ interface DataContextValue {
   deleteInventory: (id: string) => Promise<void>;
 
   // Accountability
+  /** Throws on failure so callers can surface a real error instead of a false success toast. */
   saveAccountability: (date: string, items: ChecklistItem[], dtmCount?: number) => Promise<void>;
 
   // Checklist template
@@ -282,10 +283,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (existing) {
       const updatePayload: { items: ChecklistItem[]; dtm_count?: number } = { items };
       if (dtmCount !== undefined) updatePayload.dtm_count = dtmCount;
-      const { data } = await supabase.from('accountability_days').update(updatePayload).eq('id', existing.id).select().single();
+      const { data, error } = await supabase.from('accountability_days').update(updatePayload).eq('id', existing.id).select().single();
+      // supabase-js resolves rather than throws, so a rejected write used to
+      // slip through silently and still show a "saved" toast.
+      if (error) throw new Error(error.message);
       if (data) setAccountabilityDays((prev) => prev.map((a) => (a.id === data.id ? data : a)));
     } else {
-      const { data } = await supabase.from('accountability_days').insert({ user_id: user.id, date, items, dtm_count: dtmCount ?? 0 }).select().single();
+      const { data, error } = await supabase.from('accountability_days').insert({ user_id: user.id, date, items, dtm_count: dtmCount ?? 0 }).select().single();
+      if (error) throw new Error(error.message);
       if (data) setAccountabilityDays((prev) => [data, ...prev]);
     }
   }, [user, accountabilityDays]);

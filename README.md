@@ -239,3 +239,38 @@ The Web Speech API used for voice input transcribes audio in real-time and sends
 ## License
 
 Private — for personal use.
+
+## Dashboard: Accountability & DTM
+
+The dashboard tracks the user's **dynamic** Accountability list (edited on the
+Daily page) rather than a fixed set of categories.
+
+- **Accountability card** — one row per checklist item, with a cell per day
+  (7d or 30d). Sage = done, outlined = not done, faint = no entry for that day.
+  Each row shows its current streak and completion count; the ring summarizes
+  today. Rows follow template order so positions stay stable, and labels that
+  only exist in history (renamed/removed items) are appended so past effort
+  isn't lost.
+- **DTM Momentum card** — DTM is a *count*, not a checkbox, so it has its own
+  scale and card. Shows the 7-day total, week-over-week delta, daily average,
+  and per-day bars. `tagged to contacts` is the separate per-person `dtm_log`
+  written by the Network page.
+
+> The earlier "Activity Mix" stacked bar chart was removed. It stacked unbounded
+> counts (DTM) on top of boolean checklist ticks, so one busy DTM day flattened
+> everything else, and it needed a 10-item colour legend that was unreadable on
+> a phone.
+
+### DTM data flow
+
+There are two distinct DTM concepts — don't conflate them:
+
+| Source | Table | Meaning |
+| --- | --- | --- |
+| Daily page → Accountability → DTM field | `accountability_days.dtm_count` | How many DTMs you sent that day |
+| Network page → "Mark DTM sent" | `dtm_log` (one row per person) | Who you sent one to |
+
+The **DTM This Week** stat card and the DTM Momentum bars both read
+`accountability_days.dtm_count`. `dtm_count` requires the migration in
+`supabase/upgrade-dtm-count-2026-08-08.sql`; without it every accountability
+write fails and the dashboard silently reads zero.
