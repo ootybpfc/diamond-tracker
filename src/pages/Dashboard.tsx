@@ -6,27 +6,26 @@ import { StatCard } from '../components/StatCard';
 import { Heatmap } from '../components/Heatmap';
 import { BarChart } from '../components/BarChart';
 import { Badge } from '../components/ui/Badge';
-import { lastNDays, formatDate, startOfWeek, currentMonth } from '../lib/utils';
+import { formatDate, startOfWeek, currentMonth } from '../lib/utils';
 
 export function Dashboard() {
-  const { associations, contentEntries, people, dtmLogs, dittoLogs, accountabilityDays, checklistTemplate, loading } = useData();
+  const { associations, contentEntries, people, dittoLogs, accountabilityDays, checklistTemplate, loading } = useData();
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
 
   const stats = useMemo(() => {
     const weekStart = startOfWeek(new Date());
     const weekStartStr = formatDate(weekStart);
-    const days = lastNDays(7).map((d) => formatDate(d));
+    const dtmThisWeek = accountabilityDays
+      .filter((a) => a.date >= weekStartStr)
+      .reduce((sum, a) => sum + (a.dtm_count ?? 0), 0);
 
     const activitiesThisWeek =
       associations.filter((a) => a.date >= weekStartStr).length +
       contentEntries.filter((c) => c.date >= weekStartStr).length +
-      dtmLogs.filter((d) => formatDate(new Date(d.sent_at)) >= weekStartStr).length;
+      dtmThisWeek;
 
     const customerCount = people.filter((p) => p.category === 'customer' || p.category === 'both').length;
     const prospectCount = people.filter((p) => p.category === 'prospect' || p.category === 'both').length;
-
-    const dtmThisWeek = accountabilityDays.filter((a) => a.date >= weekStartStr)
-      .reduce((sum, a) => sum + (a.dtm_count ?? 0), 0);
 
     const dittoThisMonth = dittoLogs.find((d) => d.month === currentMonth());
 
@@ -40,7 +39,7 @@ export function Dashboard() {
       const hasActivity =
         associations.some((a) => a.date === dateStr) ||
         contentEntries.some((c) => c.date === dateStr) ||
-        dtmLogs.some((dtm) => formatDate(new Date(dtm.sent_at)) === dateStr);
+        accountabilityDays.some((day) => day.date === dateStr && (day.dtm_count ?? 0) > 0);
       if (hasActivity) {
         streak++;
       } else if (i > 0) {
@@ -57,7 +56,7 @@ export function Dashboard() {
       dittoDone: Boolean(dittoThisMonth),
       streak,
     };
-  }, [associations, contentEntries, people, dtmLogs, dittoLogs]);
+  }, [accountabilityDays, associations, contentEntries, dittoLogs, people]);
 
   if (loading) {
     return (
@@ -92,7 +91,7 @@ export function Dashboard() {
       {/* Heatmap */}
       <Card>
         <SectionHeader title="Activity Heatmap" />
-        <Heatmap associations={associations} contentEntries={contentEntries} dtmLogs={dtmLogs} people={people} />
+        <Heatmap associations={associations} contentEntries={contentEntries} accountabilityDays={accountabilityDays} />
       </Card>
 
       <Card>
@@ -118,7 +117,6 @@ export function Dashboard() {
         <BarChart
           associations={associations}
           contentEntries={contentEntries}
-          dtmLogs={dtmLogs}
           accountabilityDays={accountabilityDays}
           checklistTemplate={checklistTemplate}
           period={viewMode}

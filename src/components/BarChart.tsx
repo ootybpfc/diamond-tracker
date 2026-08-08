@@ -1,22 +1,20 @@
-import { Association, ContentEntry, DtmLog, AccountabilityDay, ChecklistTemplate } from '../types/database';
+import { Association, ContentEntry, AccountabilityDay, ChecklistTemplate } from '../types/database';
 import { lastNDays, formatDate, formatMonth } from '../lib/utils';
 
 interface BarChartProps {
   associations: Association[];
   contentEntries: ContentEntry[];
-  dtmLogs: DtmLog[];
   accountabilityDays: AccountabilityDay[];
   checklistTemplate: ChecklistTemplate | null;
   period?: 'week' | 'month';
 }
 
-export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, checklistTemplate, period = 'week' }: BarChartProps) {
+export function BarChart({ associations, contentEntries, accountabilityDays, checklistTemplate, period = 'week' }: BarChartProps) {
   const recentMonthKeys = (() => {
     const months = new Set<string>();
 
     associations.forEach((a) => months.add(formatMonth(new Date(a.date))));
     contentEntries.forEach((c) => months.add(formatMonth(new Date(c.date))));
-    dtmLogs.forEach((d) => months.add(formatMonth(new Date(d.sent_at))));
     accountabilityDays.forEach((a) => months.add(formatMonth(new Date(a.date))));
 
     if (months.size === 0) {
@@ -70,12 +68,10 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
           ? c.date.startsWith(periodKey) && c.type === 'podcast'
           : c.date === periodKey && c.type === 'podcast';
       }).length,
-      dtm: dtmLogs.filter((d) => {
-        const dateStr = formatDate(new Date(d.sent_at));
-        return period === 'month'
-          ? dateStr.startsWith(periodKey)
-          : dateStr === periodKey;
-      }).length,
+      dtm: accountabilityDays.reduce((sum, day) => {
+        const matchesPeriod = period === 'month' ? day.date.startsWith(periodKey) : day.date === periodKey;
+        return matchesPeriod ? sum + (day.dtm_count ?? 0) : sum;
+      }, 0),
     };
 
     accountabilityCategories.forEach(({ key, label }) => {

@@ -1,0 +1,45 @@
+project:
+  scope_path: "."
+  loc: 3309
+  languages: [typescript, tsx]
+  git: true
+  structure:
+    src/components: "Reusable UI + feature components (Navigation, BarChart, Heatmap, MicButton, StatCard, ui/ kit)"
+    src/hooks: "React context/hooks: useAuth, useData, useMic, useOnlineStatus"
+    src/lib: "Core client logic: supabase client, ai client, IndexedDB db wrapper, utils"
+    src/pages: "App screens: Dashboard, DailyCheckin, Content, Network, Coach, AuthScreen, SetupScreen"
+    src/types: "TypeScript types matching Supabase schema"
+    api: "Vercel serverless functions (AI polish/extract)"
+    supabase: "SQL schema + upgrade scripts"
+  notes: "Single-stack React+TypeScript+Vite PWA with Supabase backend (BaaS, no custom server). Small codebase (~3.3K LOC, 35 files)."
+
+assessment:
+  change_type: upgrade
+  rationale: |
+    User requested a full-project consistency/correctness audit (variables, data flow, logical
+    connections) rather than a stack migration or module extraction. Same stack throughout;
+    classified as an in-place upgrade/bugfix pass, consistent with recent work removing legacy
+    dtmLogs wiring and aligning DTM stats to accountability_days.
+  transformations: []
+  grouping_needed: false
+  deep_planning: undecided
+
+progress_sync:
+  run_id: d6f47e10-ec84-4a62-976f-9bfc902200ae
+  grouping_mode: none
+  execution_mode: phase-by-phase
+  plan_start_time: "2026-08-08T07:58:04Z"
+  plan_completed_time: "2026-08-08T08:00:11Z"
+  execution_start_time: "2026-08-08T08:02:00Z"
+  execution_completed_time: ""
+  validation_start_time: ""
+  validation_completed_time: ""
+  total_phases: 4
+  completed_phases: 0
+  total_modules: 35
+  completed_modules: 0
+  total_tasks: 7
+  completed_tasks: 0
+  total_commits: 0
+  build_verified: false
+  test_verified: false

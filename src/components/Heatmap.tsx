@@ -1,19 +1,18 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Association, ContentEntry, DtmLog, Person } from '../types/database';
+import { Association, ContentEntry, AccountabilityDay } from '../types/database';
 import { daysInMonth, firstDayOfMonth, formatDate, isFuture, isToday } from '../lib/utils';
 import { Modal } from './ui/Modal';
 
 interface HeatmapProps {
   associations: Association[];
   contentEntries: ContentEntry[];
-  dtmLogs: DtmLog[];
-  people?: Person[];
+  accountabilityDays: AccountabilityDay[];
 }
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: HeatmapProps) {
+export function Heatmap({ associations, contentEntries, accountabilityDays }: HeatmapProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
@@ -41,16 +40,16 @@ export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: 
       map.set(c.date, existing);
     }
 
-    for (const d of dtmLogs) {
-      const date = formatDate(new Date(d.sent_at));
-      const existing = map.get(date) || { types: new Set(), count: 0 };
+    for (const day of accountabilityDays) {
+      if ((day.dtm_count ?? 0) <= 0) continue;
+      const existing = map.get(day.date) || { types: new Set(), count: 0 };
       existing.types.add('dtm');
-      existing.count++;
-      map.set(date, existing);
+      existing.count += day.dtm_count ?? 0;
+      map.set(day.date, existing);
     }
 
     return map;
-  }, [associations, contentEntries, dtmLogs]);
+  }, [accountabilityDays, associations, contentEntries]);
 
   const canGoNext = useMemo(() => {
     const next = new Date(year, month + 1, 1);
@@ -75,9 +74,9 @@ export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: 
     ? {
         associations: associations.filter((a) => a.date === selectedDay),
         content: contentEntries.filter((c) => c.date === selectedDay),
-        dtm: dtmLogs.filter((d) => formatDate(new Date(d.sent_at)) === selectedDay),
+        dtmCount: accountabilityDays.find((day) => day.date === selectedDay)?.dtm_count ?? 0,
       }
-    : { associations: [], content: [], dtm: [] };
+    : { associations: [], content: [], dtmCount: 0 };
 
   return (
     <div>
@@ -143,7 +142,7 @@ export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: 
 
       <Modal open={selectedDay !== null} onClose={() => setSelectedDay(null)} title={selectedDay || ''}>
         {selectedDayActivities && selectedDayActivities.associations.length === 0 &&
-         selectedDayActivities.content.length === 0 && selectedDayActivities.dtm.length === 0 ? (
+         selectedDayActivities.content.length === 0 && selectedDayActivities.dtmCount === 0 ? (
           <p className="text-muted text-sm py-4 text-center">No activities logged on this day.</p>
         ) : (
           <div className="space-y-3">
@@ -167,17 +166,12 @@ export function Heatmap({ associations, contentEntries, dtmLogs, people = [] }: 
                 ))}
               </div>
             )}
-            {selectedDayActivities!.dtm.length > 0 && (
+            {selectedDayActivities!.dtmCount > 0 && (
               <div>
                 <h4 className="text-xs font-mono text-muted uppercase mb-1.5">DTM Messages</h4>
-                {selectedDayActivities!.dtm.map((d) => {
-                  const person = people.find((p) => p.id === d.person_id);
-                  return (
-                    <p key={d.id} className="text-sm text-text py-1">
-                      {person ? person.name : 'Unknown contact'}
-                    </p>
-                  );
-                })}
+                <p className="text-sm text-text py-1">
+                  {selectedDayActivities.dtmCount} DTM {selectedDayActivities.dtmCount === 1 ? 'message' : 'messages'} logged
+                </p>
               </div>
             )}
           </div>

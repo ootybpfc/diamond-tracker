@@ -43,6 +43,14 @@ npm install
 3. Copy and paste the contents of [`supabase/migration.sql`](./supabase/migration.sql) and click **Run**
 4. This creates all 9 tables with Row Level Security policies and enables realtime
 
+> If you already have an existing Supabase project and are upgrading from an older schema, run the safe migration script instead:
+>
+> ```sql
+> -- supabase/upgrade-dtm-count-2026-08-08.sql
+> alter table public.accountability_days
+>   add column if not exists dtm_count integer not null default 0;
+> ```
+
 ### 3. Get Supabase Credentials
 
 1. In your Supabase project, go to **Settings** → **API**
@@ -169,7 +177,8 @@ diamond-tracker/
 │   ├── main.tsx                 # React entry point
 │   └── index.css               # Design system + Tailwind
 ├── supabase/
-│   └── migration.sql           # Database schema + RLS policies
+│   ├── migration.sql           # Database schema + RLS policies
+│   └── upgrade-dtm-count-2026-08-08.sql  # Safe upgrade for existing projects
 ├── index.html
 ├── vite.config.ts              # Vite + PWA config
 ├── tailwind.config.ts          # Dark theme colors + fonts
