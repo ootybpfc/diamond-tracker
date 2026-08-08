@@ -206,7 +206,11 @@ export function DailyCheckin() {
             type="number"
             min={0}
             value={dtmCount}
-            onChange={(e) => setDtmCount(Number(e.target.value))}
+            onChange={(e) => {
+              // An empty or malformed number input yields NaN, which Postgres rejects.
+              const parsed = Number.parseInt(e.target.value, 10);
+              setDtmCount(Number.isFinite(parsed) && parsed > 0 ? parsed : 0);
+            }}
             className="w-24"
             data-testid="input-dtm-count"
           />

@@ -17,20 +17,23 @@ export default defineConfig({
         background_color: '#12151A',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // The app is built with `base: './'` and uses HashRouter, so absolute
+        // paths break the installed PWA when it isn't served from the domain root.
+        start_url: './',
+        scope: './',
         icons: [
           {
-            src: '/icon-192.png',
+            src: 'icon-192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/icon-512.png',
+            src: 'icon-512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/icon-512.png',
+            src: 'icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

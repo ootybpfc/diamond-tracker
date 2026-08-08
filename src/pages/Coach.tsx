@@ -69,11 +69,15 @@ export function Coach() {
       const items: ActionItem[] = result.actions.map((text) => ({ text, done: false }));
       await updateCoachSession(sessionId, { action_items: items, extracting: false });
       setExtractStatus('idle');
+      // Clear the in-flight marker, otherwise `isExtracting` stays true for this
+      // session and the freshly extracted action items never render.
+      setExtractingId(null);
       toast(`${items.length} action items extracted`, 'success');
     } else if (result.status === 'cached' && result.actions) {
       const items: ActionItem[] = result.actions.map((text) => ({ text, done: false }));
       await updateCoachSession(sessionId, { action_items: items, extracting: false });
       setExtractStatus('idle');
+      setExtractingId(null);
       toast('Showing cached action items', 'info');
     } else if (result.status === 'queued') {
       setExtractStatus('queued');

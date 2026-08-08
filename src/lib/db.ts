@@ -18,6 +18,7 @@ function openDB(): Promise<IDBDatabase> {
     }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another tab'));
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -28,6 +29,13 @@ function openDB(): Promise<IDBDatabase> {
         db.createObjectStore(STORE_QUEUE, { keyPath: 'id' });
       }
     };
+  });
+
+  // Never cache a rejected handle — otherwise a single transient failure
+  // permanently disables the AI cache and offline queue for the session.
+  dbPromise = dbPromise.catch((err) => {
+    dbPromise = null;
+    throw err;
   });
 
   return dbPromise;
@@ -46,6 +54,10 @@ function tx<T>(
         const request = fn(objectStore);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
+        // A transaction can abort without the request firing onerror, which
+        // would leave the returned promise pending forever.
+        transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'));
+        transaction.onerror = () => reject(transaction.error);
       })
   );
 }

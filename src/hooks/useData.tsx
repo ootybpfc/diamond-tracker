@@ -68,6 +68,39 @@ interface DataContextValue {
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
+// Stable fallback used when a consumer renders outside DataProvider. Kept at
+// module scope so its identity never changes — returning a fresh object on
+// every render would invalidate every downstream useMemo/useEffect dependency.
+const EMPTY_DATA_CONTEXT: DataContextValue = {
+  associations: [],
+  dittoLogs: [],
+  contentEntries: [],
+  people: [],
+  dtmLogs: [],
+  inventory: [],
+  accountabilityDays: [],
+  checklistTemplate: null,
+  coachSessions: [],
+  loading: true,
+  addAssociation: async () => {},
+  deleteAssociation: async () => {},
+  saveDitto: async () => {},
+  addContent: async () => null,
+  updateContentPolished: async () => {},
+  deleteContent: async () => {},
+  addPerson: async () => {},
+  updatePerson: async () => {},
+  deletePerson: async () => {},
+  markDtmSent: async () => {},
+  addInventory: async () => {},
+  deleteInventory: async () => {},
+  saveAccountability: async () => {},
+  updateChecklistTemplate: async () => {},
+  addCoachSession: async () => null,
+  updateCoachSession: async () => {},
+  deleteCoachSession: async () => {},
+};
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
@@ -104,6 +137,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabase.from('checklist_template').select('*').limit(1).maybeSingle(),
         supabase.from('coach_sessions').select('*').order('created_at', { ascending: false }),
       ]);
+
+      // supabase-js resolves with an `error` field rather than throwing, so
+      // surface it here instead of silently rendering an empty dashboard.
+      const failed = [assocRes, dittoRes, contentRes, peopleRes, dtmRes, invRes, accRes, templateRes, coachRes]
+        .map((r) => r.error)
+        .filter(Boolean);
+      if (failed.length > 0) {
+        console.warn('[diamond-tracker] Some tables failed to load:', failed);
+      }
 
       setAssociations(assocRes.data || []);
       setDittoLogs(dittoRes.data || []);
@@ -300,36 +342,5 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 export function useData() {
   const ctx = useContext(DataContext);
-  if (ctx === undefined) {
-    return {
-      associations: [],
-      dittoLogs: [],
-      contentEntries: [],
-      people: [],
-      dtmLogs: [],
-      inventory: [],
-      accountabilityDays: [],
-      checklistTemplate: null,
-      coachSessions: [],
-      loading: true,
-      addAssociation: async () => {},
-      deleteAssociation: async () => {},
-      saveDitto: async () => {},
-      addContent: async () => null,
-      updateContentPolished: async () => {},
-      deleteContent: async () => {},
-      addPerson: async () => {},
-      updatePerson: async () => {},
-      deletePerson: async () => {},
-      markDtmSent: async () => {},
-      addInventory: async () => {},
-      deleteInventory: async () => {},
-      saveAccountability: async () => {},
-      updateChecklistTemplate: async () => {},
-      addCoachSession: async () => null,
-      updateCoachSession: async () => {},
-      deleteCoachSession: async () => {},
-    };
-  }
-  return ctx;
+  return ctx ?? EMPTY_DATA_CONTEXT;
 }

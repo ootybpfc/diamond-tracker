@@ -50,6 +50,10 @@ npm install
 > alter table public.accountability_days
 >   add column if not exists dtm_count integer not null default 0;
 > ```
+>
+> Also run `supabase/upgrade-rls-update-check-2026-08-08.sql`. It adds a
+> `WITH CHECK (auth.uid() = user_id)` clause to every UPDATE policy so a row
+> cannot be reassigned to a different `user_id` during an update.
 
 ### 3. Get Supabase Credentials
 
@@ -181,7 +185,8 @@ diamond-tracker/
 │   └── index.css               # Design system + Tailwind
 ├── supabase/
 │   ├── migration.sql           # Database schema + RLS policies
-│   └── upgrade-dtm-count-2026-08-08.sql  # Safe upgrade for existing projects
+│   ├── upgrade-dtm-count-2026-08-08.sql  # Safe upgrade for existing projects
+│   └── upgrade-rls-update-check-2026-08-08.sql  # Adds WITH CHECK to UPDATE policies
 ├── index.html
 ├── vite.config.ts              # Vite + PWA config
 ├── tailwind.config.ts          # Dark theme colors + fonts

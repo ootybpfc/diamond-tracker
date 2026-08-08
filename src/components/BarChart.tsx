@@ -41,7 +41,7 @@ export function BarChart({ associations, contentEntries, accountabilityDays, che
 
   const accountabilityLabels = checklistTemplate?.items?.length
     ? checklistTemplate.items
-    : Array.from(new Set(accountabilityDays.flatMap((day) => day.items.map((item) => item.label))));
+    : Array.from(new Set(accountabilityDays.flatMap((day) => (day.items || []).map((item) => item.label))));
 
   const colorPalette = ['bg-sage/80', 'bg-sage/60', 'bg-accent/30', 'bg-clay/60', 'bg-surface-3', 'bg-accent/40'];
 
@@ -78,7 +78,8 @@ export function BarChart({ associations, contentEntries, accountabilityDays, che
       counts[key] = accountabilityDays.reduce((sum, a) => {
         const matchesPeriod = period === 'month' ? a.date.startsWith(periodKey) : a.date === periodKey;
         if (!matchesPeriod) return sum;
-        return sum + a.items.filter((item) => item.label === label).length;
+        // Only completed checklist items count as activity for the mix chart.
+        return sum + (a.items || []).filter((item) => item.label === label && item.checked).length;
       }, 0);
     });
 
@@ -91,7 +92,6 @@ export function BarChart({ associations, contentEntries, accountabilityDays, che
     accountabilityCategories.some(({ key }) => counts[key] > 0)
   );
   const categories = [...baseCategories, ...(hasAccountabilityData ? accountabilityCategories : [])];
-  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div>

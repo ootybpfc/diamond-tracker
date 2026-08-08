@@ -143,55 +143,55 @@ alter table public.coach_sessions enable row level security;
 -- Associations
 create policy "associations_select_own" on public.associations for select using (auth.uid() = user_id);
 create policy "associations_insert_own" on public.associations for insert with check (auth.uid() = user_id);
-create policy "associations_update_own" on public.associations for update using (auth.uid() = user_id);
+create policy "associations_update_own" on public.associations for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "associations_delete_own" on public.associations for delete using (auth.uid() = user_id);
 
 -- Ditto logs
 create policy "ditto_select_own" on public.ditto_logs for select using (auth.uid() = user_id);
 create policy "ditto_insert_own" on public.ditto_logs for insert with check (auth.uid() = user_id);
-create policy "ditto_update_own" on public.ditto_logs for update using (auth.uid() = user_id);
+create policy "ditto_update_own" on public.ditto_logs for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "ditto_delete_own" on public.ditto_logs for delete using (auth.uid() = user_id);
 
 -- Content entries
 create policy "content_select_own" on public.content_entries for select using (auth.uid() = user_id);
 create policy "content_insert_own" on public.content_entries for insert with check (auth.uid() = user_id);
-create policy "content_update_own" on public.content_entries for update using (auth.uid() = user_id);
+create policy "content_update_own" on public.content_entries for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "content_delete_own" on public.content_entries for delete using (auth.uid() = user_id);
 
 -- People
 create policy "people_select_own" on public.people for select using (auth.uid() = user_id);
 create policy "people_insert_own" on public.people for insert with check (auth.uid() = user_id);
-create policy "people_update_own" on public.people for update using (auth.uid() = user_id);
+create policy "people_update_own" on public.people for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "people_delete_own" on public.people for delete using (auth.uid() = user_id);
 
 -- DTM log
 create policy "dtm_select_own" on public.dtm_log for select using (auth.uid() = user_id);
 create policy "dtm_insert_own" on public.dtm_log for insert with check (auth.uid() = user_id);
-create policy "dtm_update_own" on public.dtm_log for update using (auth.uid() = user_id);
+create policy "dtm_update_own" on public.dtm_log for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "dtm_delete_own" on public.dtm_log for delete using (auth.uid() = user_id);
 
 -- Inventory
 create policy "inventory_select_own" on public.inventory for select using (auth.uid() = user_id);
 create policy "inventory_insert_own" on public.inventory for insert with check (auth.uid() = user_id);
-create policy "inventory_update_own" on public.inventory for update using (auth.uid() = user_id);
+create policy "inventory_update_own" on public.inventory for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "inventory_delete_own" on public.inventory for delete using (auth.uid() = user_id);
 
 -- Accountability days
 create policy "accountability_select_own" on public.accountability_days for select using (auth.uid() = user_id);
 create policy "accountability_insert_own" on public.accountability_days for insert with check (auth.uid() = user_id);
-create policy "accountability_update_own" on public.accountability_days for update using (auth.uid() = user_id);
+create policy "accountability_update_own" on public.accountability_days for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "accountability_delete_own" on public.accountability_days for delete using (auth.uid() = user_id);
 
 -- Checklist template
 create policy "checklist_select_own" on public.checklist_template for select using (auth.uid() = user_id);
 create policy "checklist_insert_own" on public.checklist_template for insert with check (auth.uid() = user_id);
-create policy "checklist_update_own" on public.checklist_template for update using (auth.uid() = user_id);
+create policy "checklist_update_own" on public.checklist_template for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "checklist_delete_own" on public.checklist_template for delete using (auth.uid() = user_id);
 
 -- Coach sessions
 create policy "coach_select_own" on public.coach_sessions for select using (auth.uid() = user_id);
 create policy "coach_insert_own" on public.coach_sessions for insert with check (auth.uid() = user_id);
-create policy "coach_update_own" on public.coach_sessions for update using (auth.uid() = user_id);
+create policy "coach_update_own" on public.coach_sessions for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "coach_delete_own" on public.coach_sessions for delete using (auth.uid() = user_id);
 
 -- ============================================================

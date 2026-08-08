@@ -24,7 +24,13 @@ export function Network() {
 
   const [filter, setFilter] = useState<'all' | 'prospect' | 'customer'>('all');
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
+  // Always read the selected person back out of the live list, otherwise edits
+  // (category, notes) made inside the detail modal render against a stale copy.
+  const selectedPerson = selectedPersonId
+    ? people.find((p) => p.id === selectedPersonId) ?? null
+    : null;
 
   const filteredPeople = people.filter((p) => {
     if (filter === 'all') return true;
@@ -123,7 +129,7 @@ export function Network() {
           {filteredPeople.map((person) => (
             <button
               key={person.id}
-              onClick={() => setSelectedPerson(person)}
+              onClick={() => setSelectedPersonId(person.id)}
               className="card p-3.5 flex items-center gap-3 w-full text-left hover:border-accent/30 transition-colors"
               data-testid={`card-person-${person.id}`}
             >
@@ -161,13 +167,14 @@ export function Network() {
       {/* Person detail modal */}
       {selectedPerson && (
         <PersonDetail
+          key={selectedPerson.id}
           person={selectedPerson}
           dtmLogs={dtmLogs.filter((d) => d.person_id === selectedPerson.id)}
           inventory={inventory.filter((i) => i.person_id === selectedPerson.id)}
           onUpdate={updatePerson}
           onDelete={(id) => {
             deletePerson(id);
-            setSelectedPerson(null);
+            setSelectedPersonId(null);
             toast('Contact deleted', 'success');
           }}
           onMarkDtm={(personId) => {
@@ -176,7 +183,7 @@ export function Network() {
           }}
           onAddInventory={addInventory}
           onDeleteInventory={deleteInventory}
-          onClose={() => setSelectedPerson(null)}
+          onClose={() => setSelectedPersonId(null)}
         />
       )}
     </div>
@@ -266,7 +273,8 @@ function PersonDetail({
 
   const handleAddInventory = () => {
     if (!invItem.trim()) return;
-    onAddInventory(person.id, invItem.trim(), parseInt(invQty) || 1, invNote.trim());
+    const qty = Number.parseInt(invQty, 10);
+    onAddInventory(person.id, invItem.trim(), Number.isFinite(qty) && qty > 0 ? qty : 1, invNote.trim());
     setInvItem('');
     setInvQty('1');
     setInvNote('');
