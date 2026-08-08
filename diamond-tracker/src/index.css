@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bg text-text font-body antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-pill;
+  }
+
+  /* Prevent iOS rubber-band on body but allow inner scroll */
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Safe area padding for notched devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-card;
+  }
+
+  .input-base {
+    @apply w-full bg-surface-2 border border-border rounded-card px-4 py-3 text-text placeholder-muted
+           focus:outline-none focus:border-accent transition-colors duration-150;
+  }
+
+  .pill-btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill font-medium text-sm
+           transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-sm font-medium border transition-all duration-150
+           active:scale-95;
+  }
+}
+
+@layer utilities {
+  .text-gradient-accent {
+    background: linear-gradient(135deg, #E8A33D, #F0B253);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
