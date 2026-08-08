@@ -54,6 +54,18 @@ npm install
 > Also run `supabase/upgrade-rls-update-check-2026-08-08.sql`. It adds a
 > `WITH CHECK (auth.uid() = user_id)` clause to every UPDATE policy so a row
 > cannot be reassigned to a different `user_id` during an update.
+>
+> And run `supabase/upgrade-revoke-rls-auto-enable-2026-08-08.sql`. It revokes
+> `anon`/`authenticated` EXECUTE on the `SECURITY DEFINER` helper
+> `public.rls_auto_enable()`, which was otherwise callable by anyone at
+> `/rest/v1/rpc/rls_auto_enable`. The `ensure_rls` event trigger keeps working.
+
+### Auth hardening
+
+Enable **Prevent use of leaked passwords** under Authentication → Sign In /
+Providers → Email. It checks new passwords against HaveIBeenPwned. Note this
+setting requires a Supabase **Pro** plan; on the Free tier the dashboard will
+accept the toggle but the API rejects the save with HTTP 402.
 
 ### 3. Get Supabase Credentials
 
@@ -186,7 +198,8 @@ diamond-tracker/
 ├── supabase/
 │   ├── migration.sql           # Database schema + RLS policies
 │   ├── upgrade-dtm-count-2026-08-08.sql  # Safe upgrade for existing projects
-│   └── upgrade-rls-update-check-2026-08-08.sql  # Adds WITH CHECK to UPDATE policies
+│   ├── upgrade-rls-update-check-2026-08-08.sql  # Adds WITH CHECK to UPDATE policies
+│   └── upgrade-revoke-rls-auto-enable-2026-08-08.sql  # Unexposes definer helper from REST
 ├── index.html
 ├── vite.config.ts              # Vite + PWA config
 ├── tailwind.config.ts          # Dark theme colors + fonts
