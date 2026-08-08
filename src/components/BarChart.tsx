@@ -13,9 +13,9 @@ export function BarChart({ associations, contentEntries, accountabilityDays, che
   const recentMonthKeys = (() => {
     const months = new Set<string>();
 
-    associations.forEach((a) => months.add(formatMonth(new Date(a.date))));
-    contentEntries.forEach((c) => months.add(formatMonth(new Date(c.date))));
-    accountabilityDays.forEach((a) => months.add(formatMonth(new Date(a.date))));
+    associations.forEach((a) => months.add(a.date.slice(0, 7)));
+    contentEntries.forEach((c) => months.add(c.date.slice(0, 7)));
+    accountabilityDays.forEach((a) => months.add(a.date.slice(0, 7)));
 
     if (months.size === 0) {
       const now = new Date();

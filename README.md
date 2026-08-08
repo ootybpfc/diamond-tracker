@@ -7,7 +7,7 @@ A mobile-first Progressive Web App for solo entrepreneurs to log daily business 
 - **Frontend:** React + TypeScript + Vite
 - **Styling:** Tailwind CSS (dark theme)
 - **Backend:** Supabase (Postgres + Auth + Realtime)
-- **AI:** GitHub Models API (via Vercel Serverless Functions)
+- **AI:** Google Gemini API (via Vercel Serverless Functions)
 - **PWA:** vite-plugin-pwa (installable, offline app shell)
 - **Deploy:** Vercel (free tier)
 
@@ -22,7 +22,7 @@ A mobile-first Progressive Web App for solo entrepreneurs to log daily business 
 ## Prerequisites
 
 1. A [Supabase](https://supabase.com) account (free tier)
-2. A [GitHub](https://github.com) account (for GitHub Models API token)
+2. A [Google AI Studio](https://aistudio.google.com/apikey) account (for a Gemini API key)
 3. A [Vercel](https://vercel.com) account (free tier)
 4. Node.js 18+
 
@@ -65,25 +65,28 @@ Create a `.env` file in the project root:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
-# GitHub Models API token (server-side only — NEVER expose to client)
-GITHUB_TOKEN=ghp_your_github_personal_access_token
+# Google Gemini API key (server-side only — NEVER expose to client)
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL_NAME=gemini-1.5-flash
 ```
 
-### 5. Generate a GitHub Personal Access Token (for AI features)
+### 5. Generate a Gemini API Key (for AI features)
 
-GitHub Models provides free access to LLMs (including Llama 3.1 8B Instruct) through your GitHub account.
+Google AI Studio provides a free-tier API key for the Gemini models.
 
-1. Go to **GitHub Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** (or classic tokens)
-2. Click **Generate new token**
-3. For the **Models** scope:
-   - If using a fine-grained token, no specific repository access is needed — the token just needs the Models scope
-   - If using a classic token, select the `repo` scope (GitHub Models currently works with any valid token)
-4. Copy the token (starts with `ghp_`)
-5. Set this as `GITHUB_TOKEN` in your environment variables
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey) and sign in with a Google account
+2. Click **Create API key**
+3. Copy the generated key (starts with `AIza`)
+4. Set this as `GEMINI_API_KEY` in your environment variables
 
-> **Note:** The GitHub Models API is used server-side only. The token is stored as a Vercel environment variable and never sent to the browser. All AI calls go through the `/api/polish-content` and `/api/extract-actions` serverless functions.
+> **Note:** The Gemini API is called server-side only, via the `generateContent` REST endpoint. The key is stored as a Vercel environment variable and never sent to the browser. All AI calls go through the `/api/polish-content` and `/api/extract-actions` serverless functions.
 
-> **Alternative models:** If `meta-llama-3.1-8b-instruct` is unavailable, you can change the `MODEL` constant in `api/polish-content.ts` and `api/extract-actions.ts` to any model available on [GitHub Models](https://github.com/marketplace/models) (e.g., `gpt-4o-mini`, `Phi-3.5-mini-instruct`).
+> **AI Provider:** These functions call the [Google Generative Language API](https://ai.google.dev/gemini-api/docs) (Gemini), replacing the previously used GitHub Models service (retired 2026-07-30). Configuration is env-var driven so the provider/model can change without a code change:
+> - `GEMINI_API_KEY` — your Gemini API key (required).
+> - `GEMINI_MODEL_NAME` — model name to call. Defaults to `gemini-1.5-flash` if unset.
+> - `AI_ENDPOINT_URL` — optional full override of the `generateContent` request URL, if you need to point at a different endpoint (e.g. a regional or Vertex AI endpoint). Defaults to `https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent`.
+>
+> Set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL_NAME`) on Vercel and in your local `.env`.
 
 ### 6. Run Locally
 
@@ -111,7 +114,7 @@ npm run typecheck
 5. Under **Environment Variables**, add:
    - `VITE_SUPABASE_URL` — your Supabase project URL
    - `VITE_SUPABASE_ANON_KEY` — your Supabase anon key
-   - `GITHUB_TOKEN` — your GitHub Models token (server-side only)
+   - `GEMINI_API_KEY` — your Gemini API key (server-side only)
 6. Click **Deploy**
 
 The `/api/*` serverless functions are automatically detected from the `api/` directory and the `vercel.json` configuration.
@@ -142,8 +145,8 @@ The `/api/*` serverless functions are automatically detected from the `api/` dir
 ```
 diamond-tracker/
 ├── api/                        # Vercel Serverless Functions
-│   ├── polish-content.ts       # AI content polishing (GitHub Models)
-│   └── extract-actions.ts      # AI action item extraction (GitHub Models)
+│   ├── polish-content.ts       # AI content polishing (Gemini)
+│   └── extract-actions.ts      # AI action item extraction (Gemini)
 ├── public/                     # Static assets
 │   └── icon.svg                # App icon
 ├── src/
@@ -208,7 +211,7 @@ diamond-tracker/
 ## Security
 
 - All Supabase tables use Row Level Security (RLS) — only the authenticated owner can read/write their rows
-- The GitHub Models API token (`GITHUB_TOKEN`) is stored as a server-side environment variable and never sent to the browser
+- The Gemini API key (`GEMINI_API_KEY`) is stored as a server-side environment variable and never sent to the browser
 - Supabase anon key is safe to expose in client-side code — it only works with RLS policies
 
 ## Privacy & Audio

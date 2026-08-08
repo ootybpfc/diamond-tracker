@@ -49,7 +49,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key-here`}
           <SetupStep
             icon={<Settings size={18} />}
             title="4. For AI Features"
-            desc="Set GITHUB_TOKEN on Vercel for serverless AI functions"
+            desc="Set GEMINI_API_KEY on Vercel for serverless AI functions"
           />
         </div>
       </div>

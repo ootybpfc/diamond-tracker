@@ -1,11 +1,13 @@
 // Vercel Serverless Function: /api/extract-actions
-// Calls GitHub Models API server-side — token never exposed to client.
+// Calls the Google Generative Language API (Gemini) server-side — key never exposed to client.
 // Uses Node.js runtime with standard Vercel (req, res) handler.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const GITHUB_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions';
-const MODEL = 'meta-llama-3.1-8b-instruct';
+// AI provider: Google Gemini `generateContent` REST API (GitHub Models was retired 2026-07-30).
+// Override the model via GEMINI_MODEL_NAME; the request URL is derived from GEMINI_API_BASE + model.
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_MODEL = 'gemini-1.5-flash';
 const TIMEOUT_MS = 10000;
 
 interface RequestBody {
@@ -17,9 +19,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) {
-    return res.status(500).json({ error: 'GITHUB_TOKEN not configured' });
+  const model = process.env.GEMINI_MODEL_NAME || process.env.AI_MODEL_NAME || DEFAULT_MODEL;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+  const aiUrl = process.env.AI_ENDPOINT_URL || `${GEMINI_API_BASE}/${model}:generateContent`;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'AI API key not configured (set GEMINI_API_KEY)' });
   }
 
   const { notes } = (req.body || {}) as RequestBody;
@@ -34,20 +38,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const apiRes = await fetch(GITHUB_MODELS_URL, {
+    const apiRes = await fetch(aiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: notes },
-        ],
-        temperature: 0.3,
-        max_tokens: 300,
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: notes }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 300 },
       }),
       signal: controller.signal,
     });
@@ -55,11 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     clearTimeout(timeout);
 
     if (!apiRes.ok) {
-      return res.status(502).json({ error: `GitHub Models API error: ${apiRes.status}` });
+      const detail = await apiRes.text().catch(() => '');
+      return res.status(502).json({ error: `AI provider error: ${apiRes.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}` });
     }
 
     const data = await apiRes.json();
-    const rawContent = data.choices?.[0]?.message?.content?.trim() || '';
+    const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
     // Defensive JSON parsing
     let actions: string[] = [];

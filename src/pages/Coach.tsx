@@ -260,8 +260,8 @@ function SessionCard({
         </div>
       )}
 
-      {/* No items and not extracting */}
-      {!isExtracting && items.length === 0 && !session.extracting && (
+      {/* No items and not extracting locally — ignore a stale persisted `extracting` flag left over from an interrupted request so the user always has a way to retry */}
+      {!isExtracting && items.length === 0 && (
         <div className="flex items-center gap-2 mt-2 border-t border-border/50 pt-2">
           <Badge variant="muted">No action items</Badge>
           <Button variant="ghost" onClick={onRetryExtract} className="!py-1.5 !px-3 text-xs">
