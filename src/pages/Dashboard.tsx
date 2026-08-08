@@ -25,10 +25,8 @@ export function Dashboard() {
     const customerCount = people.filter((p) => p.category === 'customer' || p.category === 'both').length;
     const prospectCount = people.filter((p) => p.category === 'prospect' || p.category === 'both').length;
 
-    const dtmThisWeek = dtmLogs.filter((d) => {
-      const date = formatDate(new Date(d.sent_at));
-      return days.includes(date);
-    }).length;
+    const dtmThisWeek = accountabilityDays.filter((a) => a.date >= weekStartStr)
+      .reduce((sum, a) => sum + (a.dtm_count ?? 0), 0);
 
     const dittoThisMonth = dittoLogs.find((d) => d.month === currentMonth());
 

@@ -55,7 +55,7 @@ interface DataContextValue {
   deleteInventory: (id: string) => Promise<void>;
 
   // Accountability
-  saveAccountability: (date: string, items: ChecklistItem[]) => Promise<void>;
+  saveAccountability: (date: string, items: ChecklistItem[], dtmCount?: number) => Promise<void>;
 
   // Checklist template
   updateChecklistTemplate: (items: string[]) => Promise<void>;
@@ -239,14 +239,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ---- Accountability ----
-  const saveAccountability = useCallback(async (date: string, items: ChecklistItem[]) => {
+  const saveAccountability = useCallback(async (date: string, items: ChecklistItem[], dtmCount?: number) => {
     if (!supabase || !user) return;
     const existing = accountabilityDays.find((a) => a.date === date);
     if (existing) {
-      const { data } = await supabase.from('accountability_days').update({ items }).eq('id', existing.id).select().single();
+      const updatePayload: { items: ChecklistItem[]; dtm_count?: number } = { items };
+      if (dtmCount !== undefined) updatePayload.dtm_count = dtmCount;
+      const { data } = await supabase.from('accountability_days').update(updatePayload).eq('id', existing.id).select().single();
       if (data) setAccountabilityDays((prev) => prev.map((a) => (a.id === data.id ? data : a)));
     } else {
-      const { data } = await supabase.from('accountability_days').insert({ user_id: user.id, date, items }).select().single();
+      const { data } = await supabase.from('accountability_days').insert({ user_id: user.id, date, items, dtm_count: dtmCount ?? 0 }).select().single();
       if (data) setAccountabilityDays((prev) => [data, ...prev]);
     }
   }, [user, accountabilityDays]);

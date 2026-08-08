@@ -10,13 +10,6 @@ interface BarChartProps {
   period?: 'week' | 'month';
 }
 
-const BASE_CATEGORIES = [
-  { key: 'association', label: 'Assoc', color: 'bg-accent' },
-  { key: 'reading', label: 'Read', color: 'bg-sage' },
-  { key: 'podcast', label: 'Pod', color: 'bg-clay' },
-  { key: 'dtm', label: 'DTM', color: 'bg-accent/60' },
-] as const;
-
 export function BarChart({ associations, contentEntries, dtmLogs, accountabilityDays, checklistTemplate, period = 'week' }: BarChartProps) {
   const recentMonthKeys = (() => {
     const months = new Set<string>();
@@ -40,6 +33,13 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
   const periods = period === 'month'
     ? recentMonthKeys
     : lastNDays(7).map((d) => formatDate(d));
+
+  const baseCategories = [
+    { key: 'association', label: 'Assoc', color: 'bg-accent' },
+    { key: 'reading', label: 'Read', color: 'bg-sage' },
+    { key: 'podcast', label: 'Pod', color: 'bg-clay' },
+    { key: 'dtm', label: 'DTM', color: 'bg-accent/60' },
+  ];
 
   const accountabilityLabels = checklistTemplate?.items?.length
     ? checklistTemplate.items
@@ -94,7 +94,7 @@ export function BarChart({ associations, contentEntries, dtmLogs, accountability
   const hasAccountabilityData = accountabilityCategories.length > 0 && dayData.some(({ counts }) =>
     accountabilityCategories.some(({ key }) => counts[key] > 0)
   );
-  const categories = [...BASE_CATEGORIES, ...(hasAccountabilityData ? accountabilityCategories : [])];
+  const categories = [...baseCategories, ...(hasAccountabilityData ? accountabilityCategories : [])];
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (

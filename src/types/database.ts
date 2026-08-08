@@ -67,6 +67,7 @@ export interface AccountabilityDay {
   user_id: string;
   date: string; // YYYY-MM-DD, unique per user
   items: ChecklistItem[]; // jsonb
+  dtm_count: number;
 }
 
 export interface ChecklistTemplate {

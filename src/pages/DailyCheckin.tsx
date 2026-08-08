@@ -33,6 +33,7 @@ export function DailyCheckin() {
 
   // Build checklist items for today
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [dtmCount, setDtmCount] = useState(0);
 
   useEffect(() => {
     const templateItems = checklistTemplate?.items || [];
@@ -51,6 +52,7 @@ export function DailyCheckin() {
     }
 
     setChecklist(merged);
+    setDtmCount(todayAccountability?.dtm_count ?? 0);
   }, [checklistTemplate, todayAccountability]);
 
   const handleAddAssociation = async () => {
@@ -58,6 +60,11 @@ export function DailyCheckin() {
     await addAssociation(todayStr, assocText.trim());
     setAssocText('');
     toast('Association logged', 'success');
+  };
+
+  const handleSaveDtmCount = async () => {
+    await saveAccountability(todayStr, checklist, dtmCount);
+    toast('DTM count saved', 'success');
   };
 
   const handleSaveDitto = async () => {
@@ -71,7 +78,7 @@ export function DailyCheckin() {
   const toggleChecklistItem = async (index: number) => {
     const updated = checklist.map((item, i) => (i === index ? { ...item, checked: !item.checked } : item));
     setChecklist(updated);
-    await saveAccountability(todayStr, updated);
+    await saveAccountability(todayStr, updated, dtmCount);
   };
 
   const completedCount = checklist.filter((c) => c.checked).length;
@@ -193,6 +200,20 @@ export function DailyCheckin() {
             </button>
           }
         />
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <label className="text-sm font-medium">DTM</label>
+          <Input
+            type="number"
+            min={0}
+            value={dtmCount}
+            onChange={(e) => setDtmCount(Number(e.target.value))}
+            className="w-24"
+            data-testid="input-dtm-count"
+          />
+          <Button variant="secondary" onClick={handleSaveDtmCount} data-testid="button-save-dtm">
+            Save DTM
+          </Button>
+        </div>
         {checklist.length === 0 ? (
           <p className="text-sm text-muted text-center py-4">
             No checklist items yet. <button onClick={() => setTemplateModalOpen(true)} className="text-accent">Add items</button> to your daily checklist.
