@@ -90,6 +90,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('session uid', sessionData.session?.user?.id);
+
       const [
         assocRes, dittoRes, contentRes, peopleRes, dtmRes,
         invRes, accRes, templateRes, coachRes,
@@ -104,6 +107,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabase.from('checklist_template').select('*').limit(1).maybeSingle(),
         supabase.from('coach_sessions').select('*').order('created_at', { ascending: false }),
       ]);
+
+      console.log('associations rows', assocRes.data?.length, 'error', assocRes.error);
 
       setAssociations(assocRes.data || []);
       setDittoLogs(dittoRes.data || []);
