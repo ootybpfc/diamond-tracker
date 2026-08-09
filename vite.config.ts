@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration is handled in src/lib/pwa.ts so updates can be applied
+      // and recovered from; the auto-injected script only ever registered.
+      injectRegister: null,
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Diamond Tracker',
@@ -44,6 +47,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
+        skipWaiting: true,
+        navigateFallback: 'index.html',
+        // API routes are server functions, never the SPA shell.
+        navigateFallbackDenylist: [/^\/api\//],
       },
       devOptions: {
         enabled: false,
