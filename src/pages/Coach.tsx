@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { MicButton } from '../components/MicButton';
+import { appendTranscript } from '../lib/utils';
 import { extractActions } from '../lib/ai';
 import { CoachSession, ActionItem } from '../types/database';
 import { today, relativeTime } from '../lib/utils';
@@ -114,9 +115,9 @@ export function Coach() {
             className="flex-1"
             data-testid="input-coach-notes"
           />
-          <div className="self-start">
-            <MicButton onTranscript={setNotes} />
-          </div>
+        </div>
+        <div className="mb-3">
+          <MicButton onTranscript={(t) => setNotes((prev) => appendTranscript(prev, t))} />
         </div>
 
         <Textarea

@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Textarea } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { MicButton } from '../components/MicButton';
+import { appendTranscript } from '../lib/utils';
 import { polishContent, AIStatus } from '../lib/ai';
 import { ContentType, ContentEntry } from '../types/database';
 import { today, relativeTime } from '../lib/utils';
@@ -134,18 +135,16 @@ export function Content() {
           </button>
         </div>
 
-        <div className="flex gap-2 mb-3">
-          <Textarea
-            placeholder={`What did you ${type === 'reading' ? 'read' : 'listen to'} today?`}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={4}
-            className="flex-1"
-            data-testid="input-content"
-          />
-          <div className="self-start">
-            <MicButton onTranscript={setText} />
-          </div>
+        <Textarea
+          placeholder={`What did you ${type === 'reading' ? 'read' : 'listen to'} today?`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={4}
+          className="w-full"
+          data-testid="input-content"
+        />
+        <div className="mt-2 mb-3">
+          <MicButton onTranscript={(t) => setText((prev) => appendTranscript(prev, t))} />
         </div>
 
         <Button

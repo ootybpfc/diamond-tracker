@@ -102,3 +102,16 @@ export function initials(name: string): string {
 export function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val));
 }
+
+/**
+ * Append a new transcript to whatever is already in the field.
+ * Voice notes previously overwrote existing text, silently destroying
+ * anything the user had already typed or dictated.
+ */
+export function appendTranscript(existing: string, addition: string): string {
+  const base = existing.trimEnd();
+  const next = addition.trim();
+  if (!next) return existing;
+  if (!base) return next;
+  return `${base}\n\n${next}`;
+}

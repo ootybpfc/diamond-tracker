@@ -274,3 +274,33 @@ The **DTM This Week** stat card and the DTM Momentum bars both read
 `accountability_days.dtm_count`. `dtm_count` requires the migration in
 `supabase/upgrade-dtm-count-2026-08-08.sql`; without it every accountability
 write fails and the dashboard silently reads zero.
+
+## Voice transcription & AI keys
+
+### Transcription
+Voice notes are recorded with `MediaRecorder` (Opus @32kbps) and transcribed by
+Gemini via `/api/transcribe`. This replaced the browser Web Speech API, which
+was inaccurate with non-US accents, silently truncated on mobile, and is
+unsupported on iOS Safari. Recordings are capped at 10 minutes to stay under
+Vercel's 4.5MB request body limit.
+
+`src/hooks/useRecorder.ts` also exposes a live RMS input level from an
+`AnalyserNode`, which drives the pulsing halo and waveform on the mic button so
+users can see that it is listening.
+
+### Which API key gets used
+Requests to `/api/polish-content`, `/api/extract-actions` and `/api/transcribe`
+resolve a key in this order (`api/_ai.ts`):
+
+1. `x-user-api-key` request header — the user's own Google AI Studio key,
+   entered under **Settings** and stored in that browser's `localStorage`. It is
+   never written to Supabase and never leaves the device except to our own API.
+2. `GEMINI_API_KEY` (or `AI_API_KEY`) from the Vercel environment — the shared
+   fallback, billed to the project owner.
+
+So a personal key is optional. Users who add one spend their own free Google
+quota; everyone else shares the project key. Because storage is per-device, the
+key must be re-entered on each browser.
+
+Settings also carries a spoken-language hint and a custom vocabulary list, both
+passed to the transcriber to improve accuracy on names and jargon.

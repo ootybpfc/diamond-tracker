@@ -11,6 +11,7 @@ import { DailyCheckin } from './pages/DailyCheckin';
 import { Content } from './pages/Content';
 import { Network } from './pages/Network';
 import { Coach } from './pages/Coach';
+import { Settings } from './pages/Settings';
 import { isSupabaseConfigured } from './lib/supabase';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { WifiOff } from 'lucide-react';
@@ -45,6 +46,7 @@ function AppContent() {
             <Route path="/content" element={<Content />} />
             <Route path="/network" element={<Network />} />
             <Route path="/coach" element={<Coach />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

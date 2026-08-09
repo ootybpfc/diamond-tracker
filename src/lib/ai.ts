@@ -1,5 +1,6 @@
 import { ContentType } from '../types/database';
 import { getCachedResult, setCachedResult, enqueueAI, getQueuedItems, dequeueAI } from './db';
+import { aiHeaders } from './settings';
 
 export type AIStatus = 'idle' | 'loading' | 'done' | 'error' | 'queued' | 'cached';
 
@@ -44,7 +45,7 @@ export async function polishContent(
 
     const res = await fetch('/api/polish-content', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...aiHeaders() },
       body: JSON.stringify({ text, type }),
       signal: controller.signal,
     });
@@ -101,7 +102,7 @@ export async function extractActions(
 
     const res = await fetch('/api/extract-actions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...aiHeaders() },
       body: JSON.stringify({ notes }),
       signal: controller.signal,
     });
@@ -166,5 +167,66 @@ export async function processQueue(callbacks: {
     } catch {
       // Leave in queue for next retry
     }
+  }
+}
+
+/** Convert a recorded blob to base64 without blowing the stack on large files. */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the recording'));
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.slice(result.indexOf(',') + 1));
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Transcribe recorded audio via /api/transcribe (Gemini).
+ * Requires connectivity — audio is too large to queue offline usefully.
+ */
+export async function transcribeAudio(
+  blob: Blob,
+  mimeType: string,
+  options?: { language?: string; context?: string }
+): Promise<{ text: string; error?: string }> {
+  if (!navigator.onLine) {
+    return { text: '', error: 'Voice notes need a connection. Type it for now, or try again once you are back online.' };
+  }
+
+  try {
+    const audio = await blobToBase64(blob);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
+    const res = await fetch('/api/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...aiHeaders() },
+      body: JSON.stringify({
+        audio,
+        mimeType,
+        language: options?.language,
+        context: options?.context,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      return { text: '', error: (detail as { error?: string }).error || `Transcription failed (${res.status})` };
+    }
+
+    const data = (await res.json()) as { text?: string };
+    return { text: data.text ?? '' };
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { text: '', error: 'Transcription timed out. Try a shorter recording.' };
+    }
+    return { text: '', error: 'Could not reach the transcription service.' };
   }
 }
