@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, ExternalLink, Check, Trash2, LogOut } from 'lucide-react';
+import { KeyRound, ExternalLink, Check, Trash2, LogOut, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
@@ -10,6 +10,7 @@ import {
   maskKey,
   looksLikeGeminiKey,
   LANGUAGE_OPTIONS,
+  settingsPersist,
   type UserSettings,
 } from '../lib/settings';
 
@@ -23,6 +24,8 @@ export function Settings() {
   const [verifying, setVerifying] = useState(false);
 
   const hasOwnKey = settings.geminiApiKey.trim().length > 0;
+  // Blocked site data means everything here is memory-only until the app closes.
+  const [canPersist] = useState(() => settingsPersist());
 
   useEffect(() => {
     if (editingKey) setKeyInput('');
@@ -63,7 +66,12 @@ export function Settings() {
       persist({ ...settings, geminiApiKey: trimmed });
       setEditingKey(false);
       setKeyInput('');
-      toast('API key verified and saved on this device', 'success');
+      toast(
+        canPersist
+          ? 'API key verified and saved on this device'
+          : 'Key verified. Storage is blocked, so it lasts until you close the app.',
+        'success',
+      );
     } catch {
       toast('Could not reach the server to verify the key', 'error');
     } finally {
@@ -84,6 +92,26 @@ export function Settings() {
         <h1 className="font-display font-bold text-2xl text-text">Settings</h1>
         {user?.email && <p className="text-muted text-sm mt-1 break-all">{user.email}</p>}
       </header>
+
+      {!canPersist && (
+        <div
+          className="flex items-start gap-3 bg-clay/10 border border-clay/30 rounded-card p-4"
+          data-testid="banner-no-storage"
+        >
+          <AlertTriangle size={18} className="text-clay mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <h2 className="font-semibold text-text text-sm">
+              This browser is blocking storage
+            </h2>
+            <p className="text-sm text-muted mt-1 leading-relaxed">
+              Settings below will work, but they are forgotten when you close the app.
+              This usually means cookies and site data are blocked, or you opened the
+              app inside another app's browser. Open it in Chrome or Safari directly,
+              or allow site data for this site, to make settings stick.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ---- AI key ---- */}
       <section className="bg-surface rounded-card border border-border p-4 space-y-4">
@@ -159,8 +187,9 @@ export function Settings() {
         )}
 
         <p className="text-xs text-muted leading-relaxed">
-          Stored only in this browser on this device — never saved to the database. You'll need to
-          add it again on other devices.
+          {canPersist
+            ? "Stored only in this browser on this device — never saved to the database. You'll need to add it again on other devices."
+            : 'Because storage is blocked, this key is kept in memory only and will be gone when you close the app.'}
         </p>
       </section>
 

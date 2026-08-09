@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RotateCw, Trash2 } from 'lucide-react';
+import { removeItem } from '../lib/storage';
 
 /**
  * Without this, a single render error unmounts the whole React tree and leaves
@@ -43,7 +44,9 @@ export class ErrorBoundary extends Component<Props, State> {
         await Promise.all(regs.map((r) => r.unregister()));
       }
       // Deliberately scoped: clearing everything would sign the user out.
-      localStorage.removeItem('dt.settings.v1');
+      // Goes through safe storage — a blocked-storage browser is exactly the
+      // case that lands people on this screen.
+      removeItem('dt.settings.v1');
     } catch (err) {
       console.error('[ErrorBoundary] reset failed', err);
     }

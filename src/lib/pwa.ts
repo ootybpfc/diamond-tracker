@@ -22,6 +22,7 @@
  */
 
 import { registerSW } from 'virtual:pwa-register';
+import { readItem, writeItem, removeItem } from './storage';
 
 /** Survives reloads within the tab, so recovery can never become a loop. */
 const RECOVERY_FLAG = 'dt.sw.recovering';
@@ -29,12 +30,12 @@ const UPDATE_CHECK_MS = 60 * 60 * 1000;
 
 /** Nuke every cache and worker, then reload. Guarded to run at most once. */
 async function hardRecover(reason: string): Promise<void> {
-  if (sessionStorage.getItem(RECOVERY_FLAG)) {
+  if (readItem(RECOVERY_FLAG, 'session')) {
     // Already tried this. Reloading again would just spin.
     console.error(`[pwa] recovery already attempted, not retrying (${reason})`);
     return;
   }
-  sessionStorage.setItem(RECOVERY_FLAG, '1');
+  writeItem(RECOVERY_FLAG, '1', 'session');
   console.warn(`[pwa] recovering from broken cache state: ${reason}`);
 
   try {
@@ -123,6 +124,6 @@ export function setupPWA(): void {
 
   // Made it to a working render, so any earlier recovery clearly succeeded.
   window.addEventListener('load', () => {
-    sessionStorage.removeItem(RECOVERY_FLAG);
+    removeItem(RECOVERY_FLAG, 'session');
   });
 }

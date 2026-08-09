@@ -7,6 +7,8 @@
  * entered once per device.
  */
 
+import { readItem, writeItem, storageAvailable } from './storage';
+
 const STORAGE_KEY = 'dt.settings.v1';
 
 export interface UserSettings {
@@ -42,33 +44,50 @@ export const LANGUAGE_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 export function loadSettings(): UserSettings {
-  if (typeof localStorage === 'undefined') return { ...DEFAULT_SETTINGS };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw) as Partial<UserSettings>;
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    // Never trust the shape on disk; a hand-edited or half-written value
+    // must not put a non-string into a field the UI renders.
+    return {
+      geminiApiKey: typeof parsed.geminiApiKey === 'string' ? parsed.geminiApiKey : '',
+      transcriptionLanguage:
+        typeof parsed.transcriptionLanguage === 'string'
+          ? parsed.transcriptionLanguage
+          : DEFAULT_SETTINGS.transcriptionLanguage,
+      vocabulary: typeof parsed.vocabulary === 'string' ? parsed.vocabulary : '',
+    };
   } catch {
     // Corrupt or unreadable storage should never break the app.
     return { ...DEFAULT_SETTINGS };
   }
 }
 
+/** False when the browser is blocking site data, so settings last only this session. */
+export function settingsPersist(): boolean {
+  return storageAvailable('local');
+}
+
 export function saveSettings(settings: UserSettings): void {
-  if (typeof localStorage === 'undefined') return;
+  writeItem(STORAGE_KEY, JSON.stringify(settings));
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     // Let other open tabs/components react immediately.
     window.dispatchEvent(new CustomEvent('dt-settings-changed'));
   } catch {
-    // Private-mode Safari and full quotas both throw here; ignore.
+    // CustomEvent is unavailable in some very old webviews.
   }
 }
 
 /** Headers to attach to /api calls so the server uses this user's own key. */
 export function aiHeaders(): Record<string, string> {
-  const key = loadSettings().geminiApiKey.trim();
-  return key ? { 'x-user-api-key': key } : {};
+  try {
+    const key = loadSettings().geminiApiKey.trim();
+    return key ? { 'x-user-api-key': key } : {};
+  } catch {
+    // A settings problem must never stop an AI request going out.
+    return {};
+  }
 }
 
 /** Show only the last 4 characters, e.g. "AIza••••••••7f3K". */
