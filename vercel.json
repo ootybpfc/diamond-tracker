@@ -1,10 +1,22 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "functions": {
-    "api/*.ts": {
+    "api/transcribe.ts": {
+      "maxDuration": 60
+    },
+    "api/polish-content.ts": {
+      "maxDuration": 15
+    },
+    "api/extract-actions.ts": {
       "maxDuration": 15
     }
   }

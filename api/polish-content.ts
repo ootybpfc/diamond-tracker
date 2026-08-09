@@ -8,6 +8,45 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // Override the model via GEMINI_MODEL_NAME; the request URL is derived from GEMINI_API_BASE + model.
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_MODEL = 'gemini-1.5-flash';
+// --- Key resolution (inlined) ---
+// This was briefly a shared ./_ai module, but package.json sets "type": "module",
+// so the extensionless relative import failed to resolve at runtime on Vercel and
+// crashed the function with FUNCTION_INVOCATION_FAILED before any handler code ran.
+// Keeping it inline avoids that class of failure entirely.
+
+/**
+ * Users can bring their own Gemini key from Google AI Studio, sent per-request
+ * in `x-user-api-key` and never stored server-side. Otherwise fall back to the
+ * project's shared key.
+ */
+function resolveApiKey(req: VercelRequest): { apiKey?: string; source: 'user' | 'shared' } {
+  const header = req.headers['x-user-api-key'];
+  const userKey = (Array.isArray(header) ? header[0] : header)?.trim();
+  if (userKey) return { apiKey: userKey, source: 'user' };
+  return { apiKey: process.env.GEMINI_API_KEY || process.env.AI_API_KEY, source: 'shared' };
+}
+
+/** Turn provider failures into something the user can act on. */
+function describeProviderError(status: number, detail: string, source: 'user' | 'shared'): string {
+  if (status === 400 && /API key not valid|API_KEY_INVALID/i.test(detail)) {
+    return source === 'user'
+      ? 'Your Gemini API key was rejected. Check it in Settings.'
+      : "The app's Gemini API key was rejected. The owner needs to update it.";
+  }
+  if (status === 403) {
+    return `${source === 'user' ? 'Your' : "The app's"} Gemini API key does not have access to this model.`;
+  }
+  if (status === 429) {
+    return source === 'user'
+      ? 'Your Gemini quota is exhausted. Try again later.'
+      : "The app's Gemini quota is exhausted. Add your own key in Settings to keep going.";
+  }
+  return `AI provider error: ${status}${detail ? ` — ${detail.slice(0, 200)}` : ''}`;
+}
+
+const NO_KEY_MESSAGE =
+  'No Gemini API key available. Add your own key under Settings, or ask the owner to set GEMINI_API_KEY.';
+
 const TIMEOUT_MS = 10000;
 
 interface RequestBody {
@@ -21,10 +60,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const model = process.env.GEMINI_MODEL_NAME || process.env.AI_MODEL_NAME || DEFAULT_MODEL;
-  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+  const { apiKey, source } = resolveApiKey(req);
   const aiUrl = process.env.AI_ENDPOINT_URL || `${GEMINI_API_BASE}/${model}:generateContent`;
   if (!apiKey) {
-    return res.status(500).json({ error: 'AI API key not configured (set GEMINI_API_KEY)' });
+    return res.status(500).json({ error: NO_KEY_MESSAGE });
   }
 
   const { text, type } = (req.body || {}) as RequestBody;
@@ -59,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!apiRes.ok) {
       const detail = await apiRes.text().catch(() => '');
-      return res.status(502).json({ error: `AI provider error: ${apiRes.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}` });
+      return res.status(502).json({ error: describeProviderError(apiRes.status, detail, source) });
     }
 
     const data = await apiRes.json();
