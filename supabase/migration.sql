@@ -222,3 +222,27 @@ begin
   alter publication supabase_realtime add table public.checklist_template;
   alter publication supabase_realtime add table public.coach_sessions;
 end $$;
+
+-- ============================================================
+-- self_talk: one standing statement per user, shown at login
+-- ============================================================
+create table if not exists public.self_talk (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  content text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.self_talk enable row level security;
+
+revoke all on public.self_talk from anon, authenticated;
+grant select, insert, update, delete on public.self_talk to authenticated;
+
+drop policy if exists "self_talk_select_own" on public.self_talk;
+drop policy if exists "self_talk_insert_own" on public.self_talk;
+drop policy if exists "self_talk_update_own" on public.self_talk;
+drop policy if exists "self_talk_delete_own" on public.self_talk;
+
+create policy "self_talk_select_own" on public.self_talk for select using (auth.uid() = user_id);
+create policy "self_talk_insert_own" on public.self_talk for insert with check (auth.uid() = user_id);
+create policy "self_talk_update_own" on public.self_talk for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "self_talk_delete_own" on public.self_talk for delete using (auth.uid() = user_id);

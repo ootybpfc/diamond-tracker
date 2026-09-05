@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import { DataProvider } from './hooks/useData';
 import { ToastProvider } from './components/ui/Toast';
 import { BottomNav, TopNav } from './components/Navigation';
+import { SelfTalkGate } from './components/SelfTalkGate';
 import { AuthScreen } from './pages/AuthScreen';
 import { NewPasswordScreen } from './pages/NewPasswordScreen';
 import { SetupScreen } from './pages/SetupScreen';
@@ -52,6 +53,7 @@ function AppContent() {
         </main>
         <BottomNav />
       </div>
+      <SelfTalkGate />
     </DataProvider>
   );
 }

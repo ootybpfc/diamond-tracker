@@ -109,3 +109,9 @@ export interface AIQueueEntry {
   coachSessionId?: string; // for extract — to update the session
   created_at: string;
 }
+
+export interface SelfTalkRow {
+  user_id: string;
+  content: string;
+  updated_at: string;
+}

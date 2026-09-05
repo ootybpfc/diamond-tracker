@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, ExternalLink, Check, Trash2, LogOut, AlertTriangle } from 'lucide-react';
+import { KeyRound, ExternalLink, Check, Trash2, LogOut, AlertTriangle, MessageSquareQuote } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from '../hooks/useAuth';
+import { SelfTalkOverlay } from '../components/SelfTalkOverlay';
+import { loadSelfTalk, EMPTY_SELF_TALK, type SelfTalk } from '../lib/selfTalk';
 import {
   loadSettings,
   saveSettings,
@@ -26,6 +28,7 @@ export function Settings() {
   const hasOwnKey = settings.geminiApiKey.trim().length > 0;
   // Blocked site data means everything here is memory-only until the app closes.
   const [canPersist] = useState(() => settingsPersist());
+  const [selfTalk, setSelfTalk] = useState<SelfTalk | null>(null);
 
   useEffect(() => {
     if (editingKey) setKeyInput('');
@@ -233,6 +236,37 @@ export function Settings() {
           </span>
         </label>
       </section>
+
+      <section className="bg-surface rounded-card border border-border p-4 space-y-4">
+        <div className="flex items-start gap-3">
+          <MessageSquareQuote size={18} className="text-accent mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <h2 className="font-semibold text-text">Self talk</h2>
+            <p className="text-sm text-muted mt-1 leading-relaxed">
+              Shown full screen each time you open the app. Edit it here any time.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            if (!user?.id) return;
+            void loadSelfTalk(user.id).then((s) => setSelfTalk(s ?? EMPTY_SELF_TALK));
+          }}
+          className="w-full"
+          data-testid="button-open-selftalk"
+        >
+          Open my self talk
+        </Button>
+      </section>
+
+      {selfTalk && user?.id && (
+        <SelfTalkOverlay
+          userId={user.id}
+          initial={selfTalk}
+          onClose={() => setSelfTalk(null)}
+        />
+      )}
 
       <Button variant="secondary" onClick={() => void signOut()} className="w-full" data-testid="button-signout">
         <LogOut size={16} className="mr-2" /> Sign out
