@@ -18,6 +18,15 @@
     },
     "api/extract-actions.ts": {
       "maxDuration": 15
+    },
+    "api/keep-alive.ts": {
+      "maxDuration": 10
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "0 9 * * *"
+    }
+  ]
 }
