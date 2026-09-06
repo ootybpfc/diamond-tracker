@@ -246,3 +246,65 @@ create policy "self_talk_select_own" on public.self_talk for select using (auth.
 create policy "self_talk_insert_own" on public.self_talk for insert with check (auth.uid() = user_id);
 create policy "self_talk_update_own" on public.self_talk for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "self_talk_delete_own" on public.self_talk for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Keep-alive heartbeat
+-- ---------------------------------------------------------------------------
+-- Supabase pauses Free Plan projects after roughly a week without meaningful
+-- user database activity, which takes the app offline until it is manually
+-- restored. A daily Vercel cron (see vercel.json) calls /api/keep-alive, which
+-- calls keep_alive() below.
+--
+-- A write rather than a read: anon is revoked on every application table, so an
+-- unauthenticated SELECT would be rejected before doing useful work. The
+-- persisted counter also makes it possible to confirm the cron is really firing.
+
+create table if not exists public.keep_alive (
+  id smallint primary key default 1,
+  last_ping timestamptz not null default now(),
+  ping_count bigint not null default 0,
+  constraint keep_alive_singleton check (id = 1)
+);
+
+insert into public.keep_alive (id, last_ping, ping_count)
+values (1, now(), 0)
+on conflict (id) do nothing;
+
+-- RLS on with no policies: the table is unreachable directly by any client
+-- role. All access goes through the SECURITY DEFINER functions below.
+alter table public.keep_alive enable row level security;
+revoke all on public.keep_alive from anon, authenticated;
+
+create or replace function public.keep_alive()
+returns table (last_ping timestamptz, ping_count bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  update public.keep_alive
+     set last_ping = now(),
+         ping_count = keep_alive.ping_count + 1
+   where id = 1
+  returning keep_alive.last_ping, keep_alive.ping_count;
+$$;
+
+-- Read-only companion. Checking the counter via keep_alive() would increment it
+-- and make the reading ambiguous, so verification uses this instead.
+create or replace function public.keep_alive_status()
+returns table (last_ping timestamptz, ping_count bigint)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select keep_alive.last_ping, keep_alive.ping_count
+    from public.keep_alive
+   where id = 1;
+$$;
+
+-- Callable without a login so the cron needs only the anon key. Neither
+-- function can touch anything but this single counter row.
+revoke all on function public.keep_alive() from public;
+revoke all on function public.keep_alive_status() from public;
+grant execute on function public.keep_alive() to anon, authenticated;
+grant execute on function public.keep_alive_status() to anon, authenticated;
